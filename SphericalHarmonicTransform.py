@@ -31,6 +31,7 @@ class SphericalHarmonicTransform(nn.Module):
 
         clms = torch.zeros((L+1)**2,1)
 
+        #pos = pos.real
         # construct covariant spherical coordinates
         norms = torch.norm(pos,dim=1)
         ids = norms > 0
@@ -49,16 +50,12 @@ class SphericalHarmonicTransform(nn.Module):
                     q = p - m
                     s = l - p - q
                     if q >= 0 and s >= 0:
-                        SolidHarmonics += torch.mul(torch.mul(torch.pow(xpl1, p),
-                                 torch.pow(xm1,q)),
-                                 torch.pow(x0,s)) / \
-                                 (factorial(p) * factorial(q) *
-                                  factorial(s))
+                        SolidHarmonics += xpl1**p * xm1**q * x0**s / \
+                                 (factorial(p) * factorial(q) * factorial(s))
 
                 SolidHarmonics *= sqrt(factorial(l+m)*factorial(l-m))
                 # add atomic numbers here soon
-                Ylms = SolidHarmonics * sqrt((2*l+1)/4/pi) *\
-                        torch.pow(norms[ids],2)
+                Ylms = SolidHarmonics * sqrt((2*l+1)/4/pi) * norms[ids]**l
 
                 clm = torch.sum(Ylms, dim=0)
 

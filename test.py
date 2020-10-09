@@ -6,11 +6,11 @@ from MLP import MLP
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 # simulated neighbor list for one atom
-numNeighbors = 500
+numNeighbors = 50
 nl = torch.rand(numNeighbors,3)
-#nl.requires_grad = True
+nl.requires_grad = True
 # CNN params
-L = 8
+L = 5
 T = 12
 Nconv = 3
 
@@ -21,9 +21,9 @@ RotCNN = torch.nn.Sequential(SphericalHarmonicTransform(L),
                             CgTransform(L),
                             ConvLinear(L,T,2,Nconv),
                             CgTransform(L),
-                            ConvLinear(L,T,3,Nconv),
+                            ConvLinear(L,T,3,Nconv), #descriptors
                             MLP(n_in=T))
 
 x = RotCNN(nl)
 print(x)
-#print(torch.autograd.grad(x.sum(), nl, retain_graph=True))
+print(torch.autograd.grad(x.sum(), nl, retain_graph=True))

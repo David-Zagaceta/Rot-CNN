@@ -3,6 +3,8 @@ from torch import nn
 
 class MLP(nn.Module):
 
+
+
     def __init__(self, n_in, n_layers=2, n_hidden=16, activation=nn.ReLU):
         super(MLP, self).__init__()
 
@@ -29,36 +31,21 @@ class MLP(nn.Module):
         else:
             raise TypeError("activation must be a callable or a list")
 
-        self.n_layers = n_layers
-        self.activations = activations
+        modules = []
 
-        layer_string = 'layer'
         for i in range(n_layers):
             if i == 0:
-                temp_layer = nn.Linear(n_in, layer_sizes[i])
+                modules.append(nn.Linear(n_in, layer_sizes[i]))
             else:
-                temp_layer = nn.Linear(layer_sizes[i-1], layer_sizes[i])
+                modules.append(nn.Linear(layer_sizes[i-1], layer_sizes[i]))
 
-            setattr(self, layer_string+str(i), temp_layer)
+            modules.append(activations[i]())
 
         # output layer
-        temp_layer = nn.Linear(layer_sizes[n_layers-1], layer_sizes[n_layers])
-        setattr(self, 'out'+layer_string, temp_layer)
+        modules.append(nn.Linear(layer_sizes[n_layers-1], layer_sizes[n_layers]))
+
+        self.mlp = torch.nn.Sequential(*modules)
 
     def forward(self, x):
-        layer = getattr(self,'layer0')
-        res = layer(x)
-        activation = self.activations[0]
-        m = activation(inplace=False)
-        res = m(res)
-        for i in range(1,self.n_layers):
-            layerkey = 'layer'+str(i)
-            layer = getattr(self, layerkey)
-            activation = self.activations[i]
-            m = activation(inplace=False)
-            res = layer(res)
-            #res = activation(res)
-        layer = getattr(self, 'outlayer')
-        res = layer(res)
-
+        res = self.mlp(x)
         return res

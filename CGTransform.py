@@ -101,14 +101,14 @@ class ConvLinear(nn.Module):
         if L < 0:
             raise ValueError("L must be greater than or equal to zero")
 
-        if T < 0:
-            raise ValueError("T must be greater than or equal to zero")
+        if T <= 0:
+            raise ValueError("T must be greater than zero")
 
-        if n < 0:
-            raise ValueError("n must be greater than or equal to zero")
+        if n <= 0:
+            raise ValueError("n must be greater than zero")
 
-        if Nconv < 0:
-            raise ValueError("Nconv must be greater than or equal to zero")
+        if Nconv <= 0:
+            raise ValueError("Nconv must be greater than zero")
 
         self.L = L
         self.T = T

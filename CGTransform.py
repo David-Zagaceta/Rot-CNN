@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from ClebschGordan import ClebschGordanMatrices
+from typing import List
 
 def kron(a, b):
     """
@@ -10,7 +11,9 @@ def kron(a, b):
     :type b: torch.Tensor
     :rtype: torch.Tensor
     """
-    siz1 = torch.Size(torch.tensor(a.shape[-2:]) * torch.tensor(b.shape[-2:]))
+    #print(a.shape[-2:], b.shape[-2:])
+    temp: List[int] = (torch.tensor(a.shape[-2:]) * torch.tensor(b.shape[-2:])).tolist()
+    siz1 = torch.Size(temp)
     res = a.unsqueeze(-1).unsqueeze(-3) * b.unsqueeze(-2).unsqueeze(-4)
     siz0 = res.shape[:-4]
     return res.reshape(siz0 + siz1)
@@ -25,14 +28,19 @@ class CgTransform(nn.Module):
         L (int): spherical harmonic truncation index
     """
 
-    def __init__(self, L):
+    def __init__(self, L, device):
         super(CgTransform, self).__init__()
 
         if L < 0:
             raise ValueError("L must be greater than or equal to zero")
 
+        self.device = device
+
         self.L = L
-        self.matrices = ClebschGordanMatrices(L).calculate()
+        CGmatrices = ClebschGordanMatrices(L).calculate()
+        for i, mat in enumerate(CGmatrices):
+            CGmatrices[i] = mat.to(device)
+        self.matrices = CGmatrices
 
     def forward(self, clms):
         L = self.L
@@ -58,7 +66,7 @@ class CgTransform(nn.Module):
 
         CGCount = 0
         Gcount = 0
-        CountArray = torch.zeros(L+1,dtype=torch.int)
+        CountArray = torch.zeros(L+1,dtype=torch.int,device=self.device)
         for l2 in range(L+1):
             for l1 in range(l2+1):
                 lmin = l2-l1
@@ -105,7 +113,7 @@ class ConvLinear(nn.Module):
             raise ValueError("T must be greater than zero")
 
         if n <= 0:
-            raise ValueError("n must be greater than zero")
+            raise ValueError("n must be greater than or equal to zero")
 
         if Nconv <= 0:
             raise ValueError("Nconv must be greater than zero")
@@ -132,34 +140,35 @@ class ConvLinear(nn.Module):
 
         Tls = Counts*T**2
 
+        weights = []
+
         for l in range(L+1):
-            if n == 1:
-                weight = torch.nn.Linear(Counts[l], T, bias=False)
-                setattr(self, 'W'+str(l), weight)
-            elif n == Nconv:
+            if n == Nconv:
                 if l == 0:
-                    weight = torch.nn.Linear(Tls[l], T, bias=False)
-                    setattr(self, 'W'+str(l), weight)
+                    weight = torch.nn.Linear(int(Tls[l]), T, bias=False)
+                    weights.append(weight)
+            elif n == 1:
+                weight = torch.nn.Linear(int(Counts[l]), T, bias=False)
+                weights.append(weight)
             else:
-                weight = torch.nn.Linear(Tls[l], T, bias=False)
-                setattr(self, 'W'+str(l), weight)
+                weight = torch.nn.Linear(int(Tls[l]), T, bias=False)
+                weights.append(weight)
 
+        self.linear = nn.ModuleList(weights)
 
-
-        # initialize weights scheme
-
-    def forward(self, Hls):
+    def forward(self, Hls: List[torch.Tensor]):
 
         if self.n == self.Nconv:
-            layer = getattr(self,'W0')
+            layer = self.linear[0]
             return layer(Hls[0])
 
         else:
-            layer = getattr(self,'W0')
+            layer = self.linear[0]
             res = layer(Hls[0])
-            for l in range(1,self.L+1):
-                key = 'W'+str(l)
-                layer = getattr(self,key)
-                res = torch.cat((res,layer(Hls[l])),dim=0)
+            for l, Layer in enumerate(self.linear):
+                if l == 0:
+                    pass
+                else:
+                    res = torch.cat((res,Layer(Hls[l])),dim=0)
 
             return res

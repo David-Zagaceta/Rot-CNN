@@ -2,17 +2,24 @@ import torch
 from torch import nn
 from math import factorial, sqrt
 
-def powcmplx(zreal, zimag, n):
+def powcmplx(zreal: torch.Tensor, zimag: torch.Tensor, n: int):
     if n == 2:
         realpart = zreal**2 - zimag**2
         imagpart = 2*zreal*zimag
         return torch.stack((realpart, imagpart), dim=1)
     elif n > 2:
+        '''
         temp = powcmplx(zreal, zimag, n-1)
         tempreal = temp[:,0]
         tempimag = temp[:,1]
         realpart = zreal*tempreal - zimag*tempimag
         imagpart = zreal*tempimag + zimag*tempreal
+        '''
+        realpart = zreal
+        imagpart = zimag
+        for i in range(2, int(n+1), 1):
+            realpart = zreal*realpart - zimag*imagpart
+            imagpart = zreal*imagpart + zimag*realpart
         return torch.stack((realpart, imagpart), dim=1)
     elif n == 1:
         return torch.stack((zreal, zimag), dim=1)
@@ -24,7 +31,7 @@ def powcmplx(zreal, zimag, n):
     else:
         raise IndexError("powcmplx does not support negative exponents")
 
-def cosine_cutoff(r, rcut):
+def cosine_cutoff(r: torch.Tensor, rcut: float):
     pi = torch.acos(torch.zeros(1)).item() * 2
     rcutfac = pi/rcut
     outs = 0.5 * (torch.cos(r * rcutfac) + torch.ones_like(r))
@@ -43,7 +50,7 @@ class SphericalHarmonicTransform(nn.Module):
         m (int): spherical harmonic index
     """
 
-    def __init__(self, L, rcut):
+    def __init__(self, L, rcut, device):
         super(SphericalHarmonicTransform, self).__init__()
 
         if L < 0:
@@ -55,16 +62,17 @@ class SphericalHarmonicTransform(nn.Module):
             raise ValueError("l must be greater than or equal to zero")
 
         self.rcut = rcut
+        self.device = device
 
     def forward(self, pos):
         """Computes a real spherical harmonic Transform given
             cartesian vectors"""
 
         # pos [nneighbors,3]
-        pi = torch.acos(torch.zeros(1)).item() * 2
+        pi = 3.14159
         L = self.L
 
-        clms = torch.zeros((L+1)**2,1)
+        clms = torch.zeros(int((L+1)**2),1,dtype=torch.float32,device=self.device)
 
         #pos = pos.real
         # construct covariant spherical coordinates
@@ -82,8 +90,8 @@ class SphericalHarmonicTransform(nn.Module):
 
                 m = abs(M)
                 # compute the solid harmonic
-                realpart = torch.zeros_like(xpl1real)
-                imagpart = torch.zeros_like(xpl1imag)
+                realpart = torch.zeros_like(xpl1real, device=self.device, dtype=torch.float32)
+                imagpart = torch.zeros_like(xpl1imag, device=self.device, dtype=torch.float32)
                 SolidHarmonics = torch.stack((realpart, imagpart), dim=1)
                 for p in range(l + 1):
                     q = p - m

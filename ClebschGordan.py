@@ -31,7 +31,7 @@ class ClebschGordanMatrices:
 
                 for l in range(lmin,lmax+1,1):
                     dims = (2*l+1, (2*l1+1)*(2*l2+1))
-                    CG_matrices.append(torch.zeros(dims))
+                    CG_matrices.append(torch.zeros(dims, dtype=torch.float32))
 
                     for i, m in enumerate(range(-l,l+1)):
                         j = 0

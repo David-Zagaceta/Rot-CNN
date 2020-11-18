@@ -155,12 +155,12 @@ class ConvLinear(nn.Module):
             return layer(Hls[0])
 
         else:
-            layer = self.linear[0]
-            res = layer(Hls[0])
+            #layer = self.linear[0]
+            #res = layer(Hls[0])
+            results = []
             for l, Layer in enumerate(self.linear):
-                if l == 0:
-                    pass
-                else:
-                    res = torch.cat((res,Layer(Hls[l])),dim=0)
+                results.append(Layer(Hls[l]))
+
+            res = torch.cat(results,dim=0)
 
             return res

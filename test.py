@@ -16,16 +16,16 @@ device = 'cpu'
 
 TrainData = "training.json"
 TestData  = "test.json"
-
+'''
 trainingset = parse_json(TrainData)
 validationset = parse_json(TestData)
-
+'''
 
 rcut = 4.9
 
 # CNN params
-L = 2
-T = 2
+L = 5
+T = 9
 Nconv = 3
 
 '''
@@ -40,8 +40,6 @@ trainingdata = trainingdata[0:50]
 cgn = CGnet(L,T,Nconv,rcut,device=device,skip=0)
 cgn = cgn.to(device)
 
-cgn.forward(torch.rand((1,10,3),dtype=torch.float32))
-
 '''
 criterion = torch.nn.MSELoss()
 # create optimizer
@@ -50,7 +48,8 @@ optimizer = optim.Adam(cgn.parameters(), lr=3e-4)
 nepochs = 200
 
 Trainer = Trainer(cgn, optimizer, criterion, trainingdata, trainingdata, validationinterval=20)
-start = time.time()
-Trainer.train(nepochs)
-print(time.time()-start)
 '''
+start = time.time()
+#Trainer.train(nepochs)
+cgn.forward(torch.rand(64, 50, 3, dtype=torch.float32))
+print(time.time()-start)

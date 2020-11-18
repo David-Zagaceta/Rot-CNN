@@ -38,53 +38,45 @@ class CgTransform(nn.Module):
 
         self.L = L
         CGmatrices = ClebschGordanMatrices(L).calculate()
-        for i, mat in enumerate(CGmatrices):
-            CGmatrices[i] = mat.to(device)
+        for i, item in enumerate(CGmatrices):
+            inds, ls, mat = item
+            CGmatrices[i][0] = inds.to(device)
+            CGmatrices[i][1] = ls.to(device)
+            CGmatrices[i][2] = mat.to(device)
         self.matrices = CGmatrices
 
     def forward(self, clms):
         L = self.L
         CG_mats = self.matrices
-
-        Gs = []
-
         # compute all kronecker products
-        i = 0
-        for l2 in range(L+1):
-            j = 0
-            for l1 in range(l2+1):
-                f1 = clms[j:j+2*l1+1]
-                f2 = clms[i:i+2*l2+1]
-                k = kron(f1,f2)
-                Gs.append(k)
-                j += 2*l1+1
-            i += 2*l2+1
-
-        Hls = []
+        lsize = (L+1)**2
+        T = clms.shape[1]
+        Gs = kron(clms,clms).view(lsize, lsize, T**2)
 
         # perform the Transform
+        temp = []
+        for l in range(L+1):
+            temp.append([])
 
-        CGCount = 0
-        Gcount = 0
-        CountArray = torch.zeros(L+1,dtype=torch.int,device=self.device)
-        for l2 in range(L+1):
-            for l1 in range(l2+1):
-                lmin = l2-l1
-                if L >= l1+l2:
-                    lmax = l1+l2
-                else:
-                    lmax = L
-                for l in range(lmin,lmax+1):
-                    if CountArray[l] <= 0:
-                        temp = torch.matmul(CG_mats[CGCount],Gs[Gcount])
-                        Hls.append(temp)
-                        CountArray[l] += 1
-                    else:
-                        temp = torch.matmul(CG_mats[CGCount],Gs[Gcount])
-                        Hls[l] = torch.cat((Hls[l],temp),dim=1)
-                        CountArray[l] += 1
-                    CGCount += 1
-                Gcount += 1
+
+        for inds, ls, cg in CG_mats:
+            l1, l2 = inds
+            l1start = l1**2
+            l1end = (l1+1)**2
+            l2start = l2**2
+            l2end = (l2+1)**2
+            l1l2dim = (2*l1+1)*(2*l2+1)
+            #index the kron product
+            g = Gs[l1start:l1end, l2start:l2end, :].reshape(l1l2dim, T**2)
+            prod = cg@g
+            for l in ls:
+                lstart = l**2
+                lend = (l+1)**2
+                temp[l].append(prod[lstart:lend,:])
+
+        Hls = []
+        for l in range(L+1):
+            Hls.append(torch.cat(temp[l], dim=1))
         return Hls
 
 class ConvLinear(nn.Module):

@@ -24,28 +24,33 @@ validationset = parse_json(TestData)
 rcut = 4.9
 
 # CNN params
-L = 5
-T = 12
-Nconv = 5
+L = 2
+T = 2
+Nconv = 3
 
-
+'''
 nlcalc = AseEnvironmentProvider(rcut)
 
 # with only energy training
 trainingdata = SimpleAtomsDataset(trainingset, nlcalc, device=device)
-validationdata = SimpleAtomsDataset(validationset, nlcalc, device=device)
-#trainingdata = trainingdata[0:5]
-cgn = CGnet(L,T,Nconv,rcut,device=device,skip=1)
-cgn = cgn.to(device)
-#scripted_cgn = torch.jit.script(cgn)
+#validationdata = SimpleAtomsDataset(validationset, nlcalc, device=device)
 
+trainingdata = trainingdata[0:50]
+'''
+cgn = CGnet(L,T,Nconv,rcut,device=device,skip=0)
+cgn = cgn.to(device)
+
+cgn.forward(torch.rand((1,10,3),dtype=torch.float32))
+
+'''
 criterion = torch.nn.MSELoss()
 # create optimizer
-optimizer = optim.Adam(cgn.parameters(), lr=5e-4)
+optimizer = optim.Adam(cgn.parameters(), lr=3e-4)
 
-nepochs = 1000
+nepochs = 200
 
-Trainer = Trainer(cgn, optimizer, criterion, trainingdata, validationdata, validationinterval=50)
+Trainer = Trainer(cgn, optimizer, criterion, trainingdata, trainingdata, validationinterval=20)
 start = time.time()
 Trainer.train(nepochs)
 print(time.time()-start)
+'''

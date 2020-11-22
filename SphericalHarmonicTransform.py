@@ -72,7 +72,7 @@ class SphericalHarmonicTransform(nn.Module):
         pi = 3.14159
         L = self.L
 
-        clms = torch.zeros(int((L+1)**2),1,dtype=torch.float32,device=self.device)
+        clms = torch.zeros(int((L+1)**2),1,device=self.device)
 
         #pos = pos.real
         # construct covariant spherical coordinates
@@ -90,8 +90,8 @@ class SphericalHarmonicTransform(nn.Module):
 
                 m = abs(M)
                 # compute the solid harmonic
-                realpart = torch.zeros_like(xpl1real, device=self.device, dtype=torch.float32)
-                imagpart = torch.zeros_like(xpl1imag, device=self.device, dtype=torch.float32)
+                realpart = torch.zeros_like(xpl1real, device=self.device)
+                imagpart = torch.zeros_like(xpl1imag, device=self.device)
                 SolidHarmonics = torch.stack((realpart, imagpart), dim=1)
                 for p in range(l + 1):
                     q = p - m

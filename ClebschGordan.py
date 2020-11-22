@@ -24,7 +24,7 @@ class ClebschGordanMatrices:
         #Count = 0
         for l2 in range(L+1):
             for l1 in range(l2+1):
-                init_tensor = torch.zeros(((L+1)**2, (2*l1+1)*(2*l2+1)), dtype=torch.float32)
+                init_tensor = torch.zeros(((L+1)**2, (2*l1+1)*(2*l2+1)))
                 inds = torch.tensor([l1,l2])
                 lmin = l2-l1
                 if L >= l1+l2:
@@ -35,7 +35,7 @@ class ClebschGordanMatrices:
                 for l in range(lmin,lmax+1,1):
                     templist.append(l)
                     dims = (2*l+1, (2*l1+1)*(2*l2+1))
-                    temp = torch.zeros(dims, dtype=torch.float32)
+                    temp = torch.zeros(dims)
                     #CG_matrices[l].append(torch.zeros(dims, dtype=torch.float32))
 
                     for i, m in enumerate(range(-l,l+1)):

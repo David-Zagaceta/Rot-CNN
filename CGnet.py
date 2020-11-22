@@ -49,7 +49,7 @@ class CGnet(nn.Module):
     def forward(self, nl):
         if self.skip == 1:
             nAtoms = nl.shape[0]
-            energy = torch.zeros((1,1),device=self.device, dtype=torch.float32)
+            energy = torch.zeros((1,1),device=self.device)
             for i in range(nAtoms):
                 x = nl[i]
                 # all modules up to first conv linear
@@ -69,7 +69,7 @@ class CGnet(nn.Module):
 
         elif self.skip == 0:
             nAtoms = nl.shape[0]
-            energy = torch.zeros((1,1),device=self.device, dtype=torch.float32)
+            energy = torch.zeros((1,1),device=self.device)
             for i in range(nAtoms):
                 energy += self.cgnet(nl[i])
             return energy
